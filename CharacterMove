@@ -1,0 +1,130 @@
+	/// This script moves the character controller forward 
+	/// and sideways based on the arrow keys.
+	/// It also jumps when pressing space.
+	/// Make sure to attach a character controller to the same game object.
+	/// It is recommended that you make only one call to Move or SimpleMove per frame.	
+
+	var speed : float = 6.0;
+	var jumpSpeed : float = 8.0;
+	var gravity : float = 20.0;
+	//--------------------------------------
+    public var exhaustion : float = 5.0;
+    public var MaxExhaustion : float = 5.0;
+	private var bRun : boolean ;
+ 	public var RunSpeed : float = speed;
+  	public var RunSpeedMax : float = 5;
+    //--------------------------------------
+  	private var GUIStam : int;
+  	public var ctrl : boolean;
+  	public var texture : Texture2D[];
+  	public var Spot : Light;
+  	public var SpotOf_On : boolean = false;
+    //---------------------------------------
+   
+   
+   
+	private var moveDirection : Vector3 = Vector3.zero;
+
+	function Update() {
+		var controller : CharacterController = GetComponent(CharacterController);
+		if (controller.isGrounded) {
+			// We are grounded, so recalculate
+			// move direction directly from axes
+			moveDirection = Vector3(Input.GetAxis("Horizontal"), 0,
+			                        Input.GetAxis("Vertical"));
+			moveDirection = transform.TransformDirection(moveDirection);
+			moveDirection *= speed;
+			
+			  //==================БЕГ=======================
+			//-----------------------------------------------
+		if (Input.GetButton ("Left_Shift")) 
+		{
+			bRun=true;
+			if(exhaustion > 0 && bRun)
+			{
+				RunSpeed += Time.deltaTime;
+				if(RunSpeed > RunSpeedMax)
+				{
+					RunSpeed = RunSpeedMax;
+				}
+			moveDirection *= RunSpeed ;       
+			exhaustion -= Time.deltaTime;       
+			}
+			
+			}
+			else
+			{
+				audio.Play();
+			    RunSpeed=speed;
+			    bRun=false;
+			    exhaustion += Time.deltaTime;
+			    if(exhaustion > MaxExhaustion)
+			      {
+			      exhaustion = MaxExhaustion;
+			      }
+			   }
+			   
+			   
+			   
+			//----------------------------------------------------   
+		if(Input.GetButton("Jump"))
+			moveDirection.y = jumpSpeed;
+		if(Input.GetKey(KeyCode.LeftControl) && ctrl == false) //если нажати левый ctrl и еще не сидим
+		{
+			ctrl = true; //садимя
+			controller.height = 1; //уменьшаем высоту контроллера
+			speed = 3;
+
+		}
+		else if(Input.GetKeyUp(KeyCode.LeftControl) && ctrl == true) //если сидим и отпускаем левый ctrl
+		{
+			transform.position = new Vector3(transform.position.x,transform.position.y + 0.5f,transform.position.z); //поднимаем игрока на 0,5 вверх
+			ctrl = false; //говорим о том, что мы не сидим уже
+			controller.height = 2;
+			speed = 5;
+			
+		}
+				
+
+		}
+
+				// Apply gravity
+				moveDirection.y -= gravity * Time.deltaTime;
+				
+				// Move the controller
+				controller.Move(moveDirection * Time.deltaTime);
+				
+		if(Input.GetKeyDown(KeyCode.F))//Light
+		{
+			if(!SpotOf_On)
+			{
+				SpotOf_On = true;
+				Spot.GetComponent(Light).enabled = true;
+			}
+			else if(SpotOf_On)
+			{
+				SpotOf_On = false;
+				Spot.GetComponent(Light).enabled = false;
+			}
+		}
+		
+	}
+	
+	function OnGUI() ///GUI TEXTURE
+	{
+		GUIStam = exhaustion;
+		GUI.DrawTexture(new Rect(0, 730, 180, 30), texture[GUIStam]);
+		GUI.DrawTexture(new Rect(Screen.width / 2, Screen.height / 2 , 30, 30), texture[6]);
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
