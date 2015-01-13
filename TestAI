@@ -1,0 +1,44 @@
+#pragma strict
+public var Triger : Transform;
+public var speed : float = 3;
+public var animatorM : Animator;
+public var PosMob : Vector3 = Vector3(7.601426, 0, 42.98843);
+function Start () {
+
+}
+
+function Update () {
+	//var controller : CharacterController = GetComponent(CharacterController);
+	var playerDirection : Vector3 = (Triger.transform.position - transform.position).normalized;// направление на игрока
+    var angle : float = Vector3.Angle(transform.forward, playerDirection);// угол поворота на игрока
+    var maxAngle : float = 280 * Time.deltaTime;// максимальный угол поворота на текущем кадре
+    var rot : Quaternion = Quaternion.LookRotation(Triger.transform.position - transform.position);// Вычисляем прямой поворот на игрока
+    
+    
+    //if (maxAngle < angle)// поворачиваем врага на игрока с учетом скорости поворота
+	//{
+   // 	transform.rotation.y = Quaternion.Slerp(transform.rotation, rot, maxAngle / angle ).y;
+   // }
+   // else
+   // {
+    	transform.rotation.y = rot.y;
+   // }
+	if ( (Vector3.Distance(Triger.transform.position, transform.position) < 5.0f) && (Vector3.Distance(Triger.transform.position, transform.position) > 4.0f) )
+    {
+    	transform.position = Vector3.Lerp( transform.position, Triger.transform.position, Time.deltaTime * speed);
+    	//controller.Move(transform.forward * speed * Time.deltaTime);
+    	animatorM.SetBool("indle", false);
+    	animatorM.SetBool("move", true);
+
+    }
+    else // если меньше или равна трем метрам
+    {
+		if ( (Vector3.Distance( transform.position, PosMob ) < 3.0f))
+    	{
+    		animatorM.SetBool("move", false);
+    		animatorM.SetBool("indle", true);
+    	}
+    	else
+    		transform.position = Vector3.Lerp( transform.position, PosMob, Time.deltaTime * speed);
+    }
+}
