@@ -1,0 +1,97 @@
+#pragma strict
+public var audioClip : AudioClip[];
+private var animReloadLeanght : float;
+private var reload : boolean = false;
+
+function Start () {
+    // Set all animations to loop
+    animation.wrapMode = WrapMode.Loop;
+    // except shooting
+	animation["AK74_Shoot"].wrapMode = WrapMode.Once;// Проигровать анимацию один раз
+   	// Put idle and walk into lower layers (The default layer is always 0)
+	// This will do two things
+   	// - Since shoot and idle/walk are in different layers they will not affect
+   	// each other's playback when calling CrossFade.
+   	// - Since shoot is in a higher layer, the animation will replace idle/walk
+   	// animations when faded in.
+   	animation["AK74_Shoot"].layer = 1;
+
+   	// Stop animations that are already playing
+   	//(In case user forgot to disable play automatically)
+   	animation.Stop();
+}
+
+function Update ()
+{
+		if( Input.GetButton("Right_Button") && WeaponsSys.ammunitionAK74 != 0 && animReloadLeanght == 0 )// Прицеливание 
+		{
+			CharacterMove.HidenAim = true;
+			gameObject.transform.localPosition = Vector3(-0.242, -0.2325757, -0.15); 
+		}
+		else if( Input.GetButtonUp("Right_Button") && WeaponsSys.ammunitionAK74 != 0 && animReloadLeanght == 0 )
+		{
+			CharacterMove.HidenAim = false;
+			gameObject.transform.localPosition = Vector3(-0.07800198, -0.2815688, -0.141758); 
+			
+		}
+			
+		if (Mathf.Abs(Input.GetAxis("Vertical")) > 0.1)
+	    	animation.CrossFade("AK74_Move");
+		else
+		{
+	    	//gameObject.transform.localPosition = Vector3(-0.1702671, -0.2411646, -0.04869461); 	
+	    	animation.CrossFade("AK74_Indle");
+	    }
+	    ///////////////////////////////////////////////// RELOAD
+	    if( Input.GetKeyDown (KeyCode.R) )
+	    {
+	    	if( WeaponsSys.ammoAK74 > 0 )
+	    	{
+	    		reload = true;
+	    		audio.PlayOneShot(audioClip[2], 0.5);
+	    	}
+	    }
+	    if(reload)
+	    {
+	   		CharacterMove.HidenAim = false;
+	  		gameObject.transform.localPosition = Vector3(-0.07800198, -0.2815688, -0.141758);	
+	 		animation.CrossFade("AK74_Reload");
+	 		animReloadLeanght += Time.deltaTime;
+	
+	    }
+	    if(animReloadLeanght >= animation["AK74_Reload"].length)
+	    {
+	    	reload = false;
+	    	var ammo = 30 - WeaponsSys.ammunitionAK74;
+	 		animReloadLeanght = 0;
+	 		if( (WeaponsSys.ammoAK74 - ammo) > 0)
+	 		{
+	 			WeaponsSys.ammunitionAK74 += ammo;	
+		 		WeaponsSys.ammoAK74 -= ammo;
+	 		}
+	 		else
+	 		{
+	 			WeaponsSys.ammunitionAK74 = WeaponsSys.ammoAK74 + WeaponsSys.ammunitionAK74;
+	 			WeaponsSys.ammoAK74 = 0;
+	 		}
+	    }
+	    Debug.Log(Time.deltaTime);
+	    ///////////////////////////////////////////////// SPRINT
+		if(Input.GetButton("Left_Shift") && reload == false)
+			animation.CrossFade("AK74_Sprint");
+		///////////////////////////////////////////////// FIRE
+		else if (Input.GetButton("Fire1") && WeaponsSys.ammunitionAK74 != 0 && animReloadLeanght == 0)
+	    {
+	    	if( (WeaponsSys.ammunitionAK74 > 0) && (Time.deltaTime > 0.04) )
+	    	{
+
+		  		WeaponsSys.ammunitionAK74 -= 1;
+				// Camera1.transform.Rotate(Vector3.down * Time.deltaTime * 3);
+				animation.CrossFade("AK74_Shoot");
+				audio.PlayOneShot(audioClip[0], 0.5);
+				WeaponsSys._Material = true;
+			}
+			else 
+				audio.PlayOneShot(audioClip[1], 0.5);
+		}
+}
