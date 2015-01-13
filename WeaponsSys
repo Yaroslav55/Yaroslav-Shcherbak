@@ -1,0 +1,156 @@
+#pragma strict
+public var Gun1 : GameObject;
+public var Gun2 : GameObject;
+public var Gun3 : Transform;
+static var Gun1s : boolean = true;
+static var Gun2s : boolean = false;
+
+public var GunOne : boolean = true;
+public var GunTwo : boolean = true;
+
+static var ammunitionPM : int = 12;//Количество патронов в магазине ПМ
+static var ammunitionAK74 : float = 30;//Количество патронов в магазине АК74
+
+static var ammoPM : int = 90;//Общее количество патронов ПМ
+static var ammoAK74 : int = 1;//Общее количество патронов АК74
+///////////////////////////////////////////////////
+public var CrashBox : GameObject;
+public var AK74 : GameObject;
+
+public var rayPos : Transform;
+public var hit : RaycastHit;// Луч
+public var WoodMat : Transform;
+public var MetalMat : Transform;
+public var BrickMat : Transform;
+public var Brick2Mat : Transform;
+public var Sparks : Transform;
+static var _Material : boolean;
+private var CamDist : float;		// Дистанция до камеры
+
+function Start()
+{
+
+}
+function Update ()
+{
+	var Direction : Vector3 = rayPos.TransformDirection(Vector3.forward);// Направление луча
+	
+	if( Input.GetButton("1") && ( !Gun1s ) && ( GunOne ) )	
+	{
+		Gun2s = false;
+		Gun1s = true;
+	}
+	if( Input.GetButton("2") && ( !Gun2s )  && ( GunTwo ) )	
+	{
+		Gun1s = false;
+		Gun2s = true;
+			
+	}
+	Gun1.SetActive(Gun1s);
+	Gun2.SetActive(Gun2s);
+	
+	if(ammoPM > 120)//Если патронов больше 120
+		ammoPM = 120;
+	else if(ammoAK74 > 90)//Если патронов больше 90
+		ammoAK74 = 90;
+	if( Input.GetKey(KeyCode.F) )
+	{
+		if( Gun2s )
+		{
+			GunTwo = false;
+			Instantiate(AK74);
+			AK74.transform.localPosition = Gun2.transform.position;
+			AK74.transform.rigidbody.AddForce( Gun1.transform.position);
+		}
+		if( Gun1s )
+		{
+			GunOne = false;
+			Instantiate(AK74);
+			AK74.transform.localPosition = Gun1.transform.position;
+		}
+		Gun1s = false;
+		Gun2s = false;
+	}
+	if( ( Physics.Raycast( rayPos.position, Direction, hit, 100f) ))//Пустить луч в конкретных кординатах
+	{
+	   	var HitRotation : Quaternion = Quaternion.FromToRotation(Vector3.up, hit.normal); // Угол поворота текстуры выстрела 
+	   	if(  hit.transform.rigidbody )// Если обект имеет rigidbody
+	   	{
+	 	  	if( ( _Material ) )
+	 	  	{
+	 	  		if( hit.transform.name == "box_wood" )
+	 	  		{	
+	 	  			hit.transform.rigidbody.AddForceAtPosition(Direction * 100, hit.point);
+	 	  			var LifeB = CrashBox.GetComponent(LifeBox);
+	 	  			LifeB.LifeBox -= 5;
+	 	  			_Material = false;
+	 	  			if(LifeB.LifeBox  < 0)
+	 	  			{
+	 	  				Destroy( (hit.transform as Transform).gameObject);
+		 	  			CrashBox.transform.position = hit.transform.position;//Присваеваем координаты целого ящика сломаному
+		 	  			Instantiate(CrashBox);
+		 	  			LifeB.LifeBox = 10;
+		 	  			Destroy( CrashBox );
+		 	  			Debug.Log(LifeB.LifeBox);
+	 	  			}
+	 	  		}
+	 	  		else 
+	 	  			hit.transform.rigidbody.AddForceAtPosition(Direction * 100, hit.point);
+	 	  	}
+	 	  	else if( Vector3.Distance(gameObject.transform.position, hit.transform.position) < 2f )
+	 	  	{
+	 	  		if( Input.GetKey(KeyCode.E) )
+	 	  		{
+		 	  			if( (hit.transform.name == "9x18") && ( ammoPM < 120) )//Подбирание патронов 9х18
+		 	  			{
+		 	  				ammoPM += 12;
+		 	  				Destroy( (hit.transform as Transform).gameObject);
+		 	  			}
+		 	  			if( (hit.transform.name == "545x39") && ( ammoAK74 < 90) )//Подбирание патронов 5.45х39
+		 	  			{
+		 	  				ammoAK74 += 30;
+		 	  				Destroy( (hit.transform as Transform).gameObject);
+		 	  			}
+	 	  				if( hit.transform.name == "AK74_2У(Clone)" )
+	 	  				{		
+	 	  					Debug.Log("OK!");
+							GunTwo = true;
+	 	  				}
+	 	  		}
+	 	  	}
+		}
+		if( ( hit.transform.collider ) && ( _Material ) )	
+		{
+			if( hit.collider.material.staticFriction == 0.2 )// Узнать физический материал обекта(Wood)
+			{
+				var WoodlBullets : Transform = Instantiate(WoodMat, hit.point + (hit.normal * 0.001f), HitRotation);// Создание дырки от пули 
+				WoodlBullets.parent = hit.transform;// Привязка MetalBullets к обекту 
+				_Material = false;
+			}
+			else if(hit.collider.material.staticFriction == 0.1)// Узнать физический материал обекта(Metal)
+			{
+				var MetalBullets : Transform = Instantiate(MetalMat, hit.point + (hit.normal * 0.001f), HitRotation);// Создание дырки от пули 
+				MetalBullets.parent = hit.transform;// Привязка MetalBullets к обекту 
+				Instantiate(Sparks, hit.point, Quaternion.identity);
+				_Material = false;
+			}
+			else if(hit.collider.material.staticFriction == 0.3)// Узнать физический материал обекта(Brick)
+			{
+				var BrickBullets : Transform = Instantiate(BrickMat, hit.point + (hit.normal * 0.001f), HitRotation);// Создание дырки от пули 
+				BrickBullets.parent = hit.transform;// Привязка MetalBullets к обекту 
+				_Material = false;
+			}
+			else if(hit.collider.material.staticFriction == 0.5)// Узнать физический материал обекта(Brick2)
+			{
+				var Brick2lBullets : Transform = Instantiate(Brick2Mat, hit.point + (hit.normal * 0.001f), HitRotation);// Создание дырки от пули 
+				Brick2lBullets.parent = hit.transform;// Привязка MetalBullets к обекту 
+				_Material = false;
+			}
+			else 
+			{
+				Instantiate(Sparks, hit.point, Quaternion.identity);
+				_Material = false;	
+			}
+		}
+	}
+}
