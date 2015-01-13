@@ -1,0 +1,98 @@
+public var audioClip : AudioClip[];
+private var animReloadLeanght : float;
+private var reload : boolean = false;
+
+function Start () 
+{
+    // Set all animations to loop
+    animation.wrapMode = WrapMode.Loop;
+    // except shooting
+	animation["Pm_Shoot"].wrapMode = WrapMode.Once;// Проигровать анимацию один раз
+   	// Put idle and walk into lower layers (The default layer is always 0)
+	// This will do two things
+   	// - Since shoot and idle/walk are in different layers they will not affect
+   	// each other's playback when calling CrossFade.
+   	// - Since shoot is in a higher layer, the animation will replace idle/walk
+   	// animations when faded in.
+   	animation["Pm_Shoot"].layer = 1;
+
+   	// Stop animations that are already playing
+   	//(In case user forgot to disable play automatically)
+   	animation.Stop();
+}
+
+function Update () {
+   // Based on the key that is pressed,
+   // play the walk animation or the idle animation	
+		if( Input.GetButton("Right_Button") && WeaponsSys.ammunitionPM != 0 && animReloadLeanght == 0 )// Прицеливание 
+		{
+			CharacterMove.HidenAim = true;
+			gameObject.transform.localPosition = Vector3(-0.118, -0.22, -0.3); 
+			
+		}
+		else if( Input.GetButtonUp("Right_Button") && WeaponsSys.ammunitionPM != 0 && animReloadLeanght == 0 )
+		{
+			gameObject.transform.localPosition = Vector3(-0.07549667, -0.2815688, -0.1681633); 
+			CharacterMove.HidenAim = false;
+		}
+		if (Mathf.Abs(Input.GetAxis("Vertical")) > 0.1)// Анимация движения
+	    	animation.CrossFade("Pm_Move");
+		else
+		{
+	    	animation.CrossFade("Pm_Indle");// Анимация спокойствие
+	    		
+	    }
+	    	
+	    ///////////////////////////////////////////////// RELOAD
+	    if( Input.GetKeyDown (KeyCode.R) )
+	    {
+	    	if( WeaponsSys.ammoPM > 0 )
+	    	{
+	    		reload = true;
+	    		audio.PlayOneShot(audioClip[2], 0.5);
+	    	}
+	    }
+	    if(reload)
+	    {
+	  		CharacterMove.HidenAim = false;
+	   		gameObject.transform.localPosition = Vector3(-0.07549667, -0.2815688, -0.1681633); 
+	 		animation.CrossFade("Pm_Reload");
+	 		animReloadLeanght += Time.deltaTime;
+	
+	    }
+	    if(animReloadLeanght >= animation["Pm_Reload"].length)
+	    {
+	    	reload = false;
+	    	var ammo = 12 - WeaponsSys.ammunitionPM;
+	 		animReloadLeanght = 0;
+	 		if( (WeaponsSys.ammoPM - ammo) > 0)
+	 		{
+	 			WeaponsSys.ammunitionPM += ammo;	
+		 		WeaponsSys.ammoPM -= ammo;
+	 		}
+	 		else
+	 		{
+	 			WeaponsSys.ammunitionPM = WeaponsSys.ammoPM + WeaponsSys.ammunitionPM;
+	 			WeaponsSys.ammoPM = 0;
+	 		}
+	    }
+	    ///////////////////////////////////////////////// SPRINT
+		if(Input.GetButton("Left_Shift") && reload == false)
+			animation.CrossFade("Pm_Sprint");
+			
+	    ///////////////////////////////////////////////// Shoot
+		else if (Input.GetButtonUp("Fire1") && animReloadLeanght == 0)
+	    {
+	   		if(WeaponsSys.ammunitionPM > 0)
+	    	{
+		  		WeaponsSys.ammunitionPM -= 1;
+			   // Camera1.transform.Rotate(Vector3.down * Time.deltaTime * 3);
+				animation.CrossFade("Pm_Shoot");
+				audio.PlayOneShot(audioClip[0], 0.5);
+				WeaponsSys._Material = true;
+			}
+			else
+				audio.PlayOneShot(audioClip[1], 0.5);
+				
+		}
+}
