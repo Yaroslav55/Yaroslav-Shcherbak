@@ -1,79 +1,67 @@
-	/// This script moves the character controller forward 
-	/// and sideways based on the arrow keys.
-	/// It also jumps when pressing space.
-	/// Make sure to attach a character controller to the same game object.
-	/// It is recommended that you make only one call to Move or SimpleMove per frame.	
+#pragma strict
+private var fatigue : float = 0.76f;
+public var Speed : int = 100;
+public var SpeedBoolean : boolean = true;
+static var HidenAim : boolean = false;
 
-	var speed : float = 6.0;
-	var jumpSpeed : float = 8.0;
-	var gravity : float = 20.0;
-	//--------------------------------------
-    public var exhaustion : float = 5.0;
-    public var MaxExhaustion : float = 5.0;
-	private var bRun : boolean ;
- 	public var RunSpeed : float = speed;
-  	public var RunSpeedMax : float = 5;
-    //--------------------------------------
-  	private var GUIStam : int;
-  	public var ctrl : boolean;
-  	public var texture : Texture2D[];
-  	public var Spot : Light;
-  	public var SpotOf_On : boolean = false;
-    //---------------------------------------
-   
-   
-   
-	private var moveDirection : Vector3 = Vector3.zero;
+//--------------------------------------
+public var ctrl : boolean;
+public var texture : Texture2D[];
+public var Spot : Light;
+private var SpotOf_On : boolean = false;
+private var speedA : int = 6;
+public var jumpSpeed : float = 8.0;
+public var gravity : float = 10.0;
+//--------------------------------------- 
+private var moveDirection : Vector3 = Vector3.zero;
 
-	function Update() {
-		var controller : CharacterController = GetComponent(CharacterController);
-		if (controller.isGrounded) {
-			// We are grounded, so recalculate
-			// move direction directly from axes
-			moveDirection = Vector3(Input.GetAxis("Horizontal"), 0,
-			                        Input.GetAxis("Vertical"));
-			moveDirection = transform.TransformDirection(moveDirection);
-			moveDirection *= speed;
+function Update()
+{
+	var controller : CharacterController = GetComponent(CharacterController);
+	if (controller.isGrounded) {
+		// We are grounded, so recalculate
+		// move direction directly from axes
+		moveDirection = Vector3(Input.GetAxis("Horizontal"), 0,
+		    Input.GetAxis("Vertical"));
+		moveDirection = transform.TransformDirection(moveDirection);
+			moveDirection *= speedA;
 			
 			  //==================БЕГ=======================
 			//-----------------------------------------------
 		if (Input.GetButton ("Left_Shift")) 
+		{ 
+			if(Speed <= 0){
+				SpeedBoolean = false;
+			}
+			else if( ( fatigue > 0.64 ) && ( SpeedBoolean ) )
+			{
+				fatigue -= 0.0005f;
+				Speed -= 1;
+				moveDirection *= 2 + Time.deltaTime;
+			}
+		
+		}
+		else 
+			SpeedBoolean = false;
+		if( !SpeedBoolean )// Востановление сил
 		{
-			bRun=true;
-			if(exhaustion > 0 && bRun)
+			if( Speed < 240)
 			{
-				RunSpeed += Time.deltaTime;
-				if(RunSpeed > RunSpeedMax)
-				{
-					RunSpeed = RunSpeedMax;
-				}
-			moveDirection *= RunSpeed ;       
-			exhaustion -= Time.deltaTime;       
+				Speed += 3; 
+				fatigue += 0.0015f;
 			}
+			else 
+				SpeedBoolean = true;
 			
-			}
-			else
-			{
-				audio.Play();
-			    RunSpeed=speed;
-			    bRun=false;
-			    exhaustion += Time.deltaTime;
-			    if(exhaustion > MaxExhaustion)
-			      {
-			      exhaustion = MaxExhaustion;
-			      }
-			   }
-			   
-			   
-			   
+		}	   	   
 			//----------------------------------------------------   
-		if(Input.GetButton("Jump"))
+		if(Input.GetButton("Jump"))//Прижок
 			moveDirection.y = jumpSpeed;
-		if(Input.GetKey(KeyCode.LeftControl) && ctrl == false) //если нажати левый ctrl и еще не сидим
+		else if(Input.GetKey(KeyCode.LeftControl) && ctrl == false) //если нажати левый ctrl и еще не сидим
 		{
 			ctrl = true; //садимя
 			controller.height = 1; //уменьшаем высоту контроллера
-			speed = 3;
+			speedA = 3;
 
 		}
 		else if(Input.GetKeyUp(KeyCode.LeftControl) && ctrl == true) //если сидим и отпускаем левый ctrl
@@ -81,41 +69,52 @@
 			transform.position = new Vector3(transform.position.x,transform.position.y + 0.5f,transform.position.z); //поднимаем игрока на 0,5 вверх
 			ctrl = false; //говорим о том, что мы не сидим уже
 			controller.height = 2;
-			speed = 5;
+			speedA = 5;
 			
 		}
 				
 
-		}
+	}
 
-				// Apply gravity
-				moveDirection.y -= gravity * Time.deltaTime;
+	// Apply gravity
+	moveDirection.y -= gravity * Time.deltaTime;
 				
-				// Move the controller
-				controller.Move(moveDirection * Time.deltaTime);
-				
-		if(Input.GetKeyDown(KeyCode.F))//Light
-		{
-			if(!SpotOf_On)
-			{
-				SpotOf_On = true;
-				Spot.GetComponent(Light).enabled = true;
-			}
-			else if(SpotOf_On)
-			{
-				SpotOf_On = false;
-				Spot.GetComponent(Light).enabled = false;
-			}
-		}
-		
-	}
+	// Move the controller
+	controller.Move(moveDirection * Time.deltaTime);
 	
-	function OnGUI() ///GUI TEXTURE
+	if(Input.GetKeyDown(KeyCode.F))//Light
 	{
-		GUIStam = exhaustion;
-		GUI.DrawTexture(new Rect(0, 730, 180, 30), texture[GUIStam]);
-		GUI.DrawTexture(new Rect(Screen.width / 2, Screen.height / 2 , 30, 30), texture[6]);
+		if(!SpotOf_On)
+		{
+			SpotOf_On = true;
+			Spot.GetComponent(Light).enabled = true;
+		}
+		else if(SpotOf_On)
+		{
+			SpotOf_On = false;
+			Spot.GetComponent(Light).enabled = false;
+		}
 	}
+	}
+function OnGUI() ///GUI TEXTURE
+{
+	if( !HidenAim )
+		GUI.DrawTexture( Rect(  Screen.width / 2  - 10, Screen.height / 2 - 10, 30, 30 ), texture[6], ScaleMode.ScaleToFit, true);
+		
+		GUI.DrawTextureWithTexCoords( Rect(1650, 780 , 320, 250), texture[7],  Rect(0.75f, 0.86f, 0.3f, 0.3f), true);
+		GUI.DrawTextureWithTexCoords( Rect(1720, 937 , 160, 10), texture[7],  Rect(0.76f, 0.801f, 0.15f, 0.01f), true);//Жизнь
+		GUI.DrawTextureWithTexCoords( Rect(1720, 955 , 160, 10), texture[7],  Rect(fatigue, 0.78f, 0.15, 0.01f), true);
+	if(WeaponsSys.Gun1s )
+	{
+		GUI.Label (Rect (1755, 970, 50,50), WeaponsSys.ammunitionPM.ToString());
+		GUI.Label (Rect (1745, 990, 50,50), WeaponsSys.ammoPM.ToString() );
+	}
+	if( WeaponsSys.Gun2s )
+	{
+		GUI.Label (Rect (1755, 970, 50,50), WeaponsSys.ammunitionAK74.ToString("f0"));
+		GUI.Label (Rect (1745, 990, 50,50), WeaponsSys.ammoAK74.ToString() );
+	}
+}
 	
 	
 	
